@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const attach = @import("../src/process.zig");
+const process = @import("../src/process.zig");
 
 fn main(init: std.process.Init) void {
     // juicy main introduced in 0.16 provides the main function with basic io,a gpa,args ,environment variables etc
@@ -11,5 +11,5 @@ fn main(init: std.process.Init) void {
         std.debug.print("No file to debug", .{});
     }
 
-    var pid: std.posix.pid_t = attach(args.len, args, init.io);
+    var pid: std.posix.pid_t = process.Attach(args.len, args, init.io);
 }

@@ -70,7 +70,7 @@ pub fn Attach(len: usize, args: []const [:0]const u8, init: std.process.Init) st
                 std.os.linux.exit(1); // we dont want to return anything from child process...we must exit
             }
             var buff: [std.fs.max_path_bytes + 1]u8 = undefined;
-            const resolvedLength = std.Io.Dir.cwd().realPath(fileName, init.io, &buff) catch |err| {
+            const resolvedLength = std.Io.Dir.cwd().realPathFile(init.io, fileName, &buff) catch |err| {
                 std.debug.print("Could not resolve the path for the file : {}", .{err});
                 std.os.linux.exit(1);
             };

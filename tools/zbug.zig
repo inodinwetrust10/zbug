@@ -1,15 +1,26 @@
 const std = @import("std");
+const zbug = @import("zbug");
+const process = zbug.process;
 
-const process = @import("../src/process.zig");
-
-fn main(init: std.process.Init) void {
-    // juicy main introduced in 0.16 provides the main function with basic io,a gpa,args ,environment variables etc
+pub fn main(init: std.process.Init) void {
     const allocator: std.mem.Allocator = init.gpa;
-    const args: []const [:0]const u8 = init.minimal.args.toSlice(allocator);
 
-    if (args.len == 1) {
-        std.debug.print("No file to debug", .{});
+    const args: []const [:0]const u8 = init.minimal.args.toSlice(allocator) catch |err| {
+        std.debug.print("Cannot allocate the slice for args: {s}\n", .{@errorName(err)});
+        std.process.exit(1);
+    };
+
+    if (args.len < 2) {
+        std.debug.print("Usage: zbug <program>\n", .{});
+        std.process.exit(1);
     }
 
-    var pid: std.posix.pid_t = process.Attach(args.len, args, init.io);
+    const pid: std.posix.pid_t = process.Attach(args.len, args, init);
+
+    var wait_status: u32 = undefined;
+    const result: usize = std.os.linux.waitpid(pid, &wait_status, 0);
+    if (std.posix.errno(result) != .SUCCESS) {
+        std.debug.print("waitpid failed\n", .{});
+        std.process.exit(1);
+    }
 }

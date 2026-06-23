@@ -16,15 +16,21 @@ const ExecveParams = struct {
 fn buildArgsAndEnv(init: std.process.Init) !ExecveParams {
     const allocator = init.gpa;
 
-    const argv_strings = try init.minimal.args.toSlice(allocator);
+    // ["zbug", "./hello", "arg1", "arg2"]
+    const all_args = try init.minimal.args.toSlice(allocator);
+    errdefer allocator.free(all_args);
+
+    // ["./hello", "arg1", "arg2"]
+    const program_args = all_args[1..];
 
     const argv_storage = try allocator.allocSentinel(
         ?[*:0]const u8,
-        argv_strings.len,
+        program_args.len,
         null,
     );
+    errdefer allocator.free(argv_storage);
 
-    for (argv_strings, 0..) |arg, i| {
+    for (program_args, 0..) |arg, i| {
         argv_storage[i] = arg.ptr;
     }
 
@@ -32,11 +38,10 @@ fn buildArgsAndEnv(init: std.process.Init) !ExecveParams {
         .argv = argv_storage.ptr,
         .envp = init.minimal.environ.block.slice.ptr,
 
-        .argv_strings = argv_strings,
+        .argv_strings = all_args,
         .argv_storage = argv_storage,
     };
 }
-
 pub fn Attach(len: usize, args: []const [:0]const u8, init: std.process.Init) std.posix.pid_t {
     var pid: std.posix.pid_t = 0;
     //attaching to a process using process_id(pid)
